@@ -107,4 +107,5 @@ dist
 .vscode
 .DS_Store
 data
-release
+release.venv
+backups
