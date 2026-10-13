@@ -3,7 +3,7 @@
 Builds, per board, a filesystem OTA (flash from xhost setup) and a full
 flash image (flash with esptool) from the committed release files.
 
-usage: python scripts/goldhen-repack.py <goldhen.bin> <label>
+usage: python scripts/goldhen-repack.py <goldhen.bin> <label> [board ...]
 requires: pip install littlefs-python
 """
 import gzip, hashlib, json, os, re, sys
@@ -65,11 +65,12 @@ def swap_goldhen(files, goldhen, label):
     files['/cache.manifest.gz'] = gz(re.sub(r'#[0-9a-f]{32}', '#' + digest, manifest).encode())
 
 
-def main(goldhen_path, label):
+def main(goldhen_path, label, *boards):
     goldhen = open(goldhen_path, 'rb').read()
     release = '.'.join(json.load(open(os.path.join(ROOT, 'version.json')))['version'].split('.')[:3])
     tag = 'gh' + label
-    for board, cfg in BOARDS.items():
+    for board in boards or BOARDS:
+        cfg = BOARDS[board]
         ota = open(os.path.join(ROOT, 'ota', f'{board}-base.fs.ota'), 'rb').read()
         header, image = ota[:OTA_HEADER_SIZE], ota[OTA_HEADER_SIZE:]
         assert len(image) == cfg['fs_size'], board
@@ -92,6 +93,6 @@ def main(goldhen_path, label):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3 or not set(sys.argv[3:]) <= set(BOARDS):
         sys.exit(__doc__)
     main(*sys.argv[1:])
